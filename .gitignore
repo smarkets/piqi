@@ -19,4 +19,4 @@ build
 examples/erlang/piqi-erlang
 piqi-rpc/src/piqi-erlang
 tests/erlang_piqi/piqi-erlang
-
+ebin/
