@@ -1,4 +1,6 @@
 #!/bin/bash
 
-cp -r piqi-erlang/ebin ebin && \
-cp -r piqi-erlang/include include
+cp -r piqi-erlang/ebin/* ebin && \
+mkdir -p include/ && \
+cp -r -L piqi-erlang/include/* include && \
+rm -rf bin
