@@ -2,5 +2,5 @@
 
 cp -r piqi-erlang/ebin/* ebin && \
 mkdir -p include/ && \
-cp -r -L piqi-erlang/include/* include && \
+cp -L piqi-erlang/include/* include && \
 rm -rf bin
