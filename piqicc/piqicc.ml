@@ -141,15 +141,14 @@ let piqicc ch boot_fname piqi_fname piqi_impl_fname =
       *)
   }
   in
-  let gen_piqi_binobj piqi = Piqirun.gen_binobj T.gen_piqi piqi in
+  let gen_piqi_binobj piqi = Piqirun.gen_binobj T.gen__piqi piqi in
 
   let piqi_binobj = gen_piqi_binobj piqi in
   let piqi_boot_binobj = gen_piqi_binobj boot_piqi in
 
   let code = iod " " [
     ios "let parse_piqi_binobj x = ";
-      ios "let _name, piqwire = Piqirun.parse_binobj x in";
-      ios "parse_piqi piqwire";
+      ios "Piqirun.parse_binobj parse_piqi x";
     eol;
 
     ios "let piqi = ";

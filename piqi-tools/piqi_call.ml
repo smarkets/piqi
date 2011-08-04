@@ -52,7 +52,7 @@ let string_of_rpc_error = function
 
 let call_local_server ((ich, och) as _handle) func_name data =
   trace "piqi_call: calling %s\n" func_name;
-  let request = Piqi_rpc.Request#{name = func_name; data = data} in
+  let request = Piqi_rpc_piqi.Request#{name = func_name; data = data} in
   Piqi_server.send_request och request;
   match Piqi_server.receive_response ich with
     | `rpc_error err ->
@@ -162,9 +162,8 @@ let encode_input_data f args =
         trace "piqi_call: parsing arguments\n";
         (* XXX: C.resolve_defaults := true; *)
         let piqobj = Piqi_getopt.parse_args (piqtype :> T.piqtype) args in
-        let iodata = Piqobj_to_wire.gen_embedded_obj piqobj in
-        let res = Piqirun.to_string iodata in
-        Some res
+        let binobj = Piqobj_to_wire.gen_binobj piqobj in
+        Some binobj
 
 
 let decode_response f output =
@@ -318,10 +317,10 @@ let gen_result ch writer res =
   match res with
     | `ok_empty -> ()
     | `ok obj ->
-        writer ch (Piq.Typed_piqobj obj)
+        writer ch (Piq.Piqobj obj)
     | `error obj ->
         trace "piqi_call: remote function returned error:\n";
-        writer stderr (Piq.Typed_piqobj obj);
+        writer stderr (Piq.Piqobj obj);
         exit 1
 
 
@@ -615,7 +614,7 @@ let run () =
   Main.parse_args ()
     ~speclist ~usage ~min_arg_count:1 ~max_arg_count:1 ~custom_anon_fun;
 
-  Piqi_json.init ();
+  Piqi_convert.init ();
   Piqi_getopt.init ();
 
   (* reset Piqi module lookup paths in order to prevent them from getting loaded

@@ -21,7 +21,8 @@
  * piqi_ocaml.ml, because this would break piqicc bootstrap)
  *)
 
-open Piqi_common
+module C = Piqi_common
+open C
 
 
 (*
@@ -114,7 +115,7 @@ let mlname_defs (defs:T.piqdef list) =
 
 let mlmodname n =
   let n = Piqi_name.get_local_name n in (* cut module path *)
-  Some (ocaml_ucname n)
+  Some (ocaml_ucname n ^ "_piqi")
 
 
 let rec mlname_piqi (piqi:T.piqi) =
@@ -148,7 +149,11 @@ open Iolist
 let piqic (piqi: T.piqi) =
   Piqic_common.piqic_common piqi;
 
-  (* set ocaml names which are not specified by user *)
+  (* set ocaml names that are not specified by user *)
+  (match !C.boot_piqi with
+    | None -> ()
+    | Some x -> mlname_piqi x
+  );
   mlname_piqi piqi;
 
   (* set current module's name *)

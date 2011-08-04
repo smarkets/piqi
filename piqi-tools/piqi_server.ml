@@ -25,7 +25,7 @@
 module C = Piqi_common
 open C
 
-module I = Piqi_tools
+module I = Piqi_tools_piqi
 
 
 (* serialize and send one length-delimited packet to the output channle *)
@@ -45,24 +45,24 @@ let receive_packet ch =
 
 (* encode and write request/response structure to the output channel *)
 let send_request ch request =
-  let request = Piqi_rpc.gen_request (-1) request in
+  let request = Piqi_rpc_piqi.gen_request request in
   send_packet ch request
 
 
 let send_response ch response =
-  let response = Piqi_rpc.gen_response (-1) response in
+  let response = Piqi_rpc_piqi.gen_response response in
   send_packet ch response
 
 
 (* read and decode one request/response structure from the input channel *)
 let receive_request ch =
   let buf = receive_packet ch in
-  Piqi_rpc.parse_request buf
+  Piqi_rpc_piqi.parse_request buf
 
 
 let receive_response ch =
   let buf = receive_packet ch in
-  Piqi_rpc.parse_response buf
+  Piqi_rpc_piqi.parse_response buf
 
 
 (* utility functions for constructing Piqi_rpc responses *)
@@ -131,10 +131,13 @@ let parse_json piqtype s =
   obj
 
 
-let gen_json obj =
+let gen_json ?(pp=true) obj =
   let json = Piq.gen_json obj in
-  (* XXX: make pretty-printing optional? *)
-  Piqi_json_gen.pretty_to_string json
+  if pp
+  then
+    Piqi_json_gen.pretty_to_string json
+  else
+    Piqi_json_gen.to_string json
 
 
 let parse_pb piqtype s =
@@ -189,7 +192,7 @@ let convert args =
   let output =
     match args.output_format with
       | `piq  -> gen_piq piqobj
-      | `json -> gen_json piqobj
+      | `json -> gen_json piqobj ~pp:args.pretty_print
       | `pb -> gen_pb piqobj
       | `xml -> gen_xml piqobj
       (*
@@ -239,7 +242,7 @@ let add_piqi args =
   with_handle_piqi_errors add_piqi args
 
 
-exception Break of Piqi_rpc.response
+exception Break of Piqi_rpc_piqi.response
 
 
 let do_args f data =
@@ -267,19 +270,19 @@ let do_run f x =
 
 
 let execute_request req =
-  let open Piqi_rpc.Request in
+  let open Piqi_rpc_piqi.Request in
   match req.name, req.data with
     | "convert", data -> (
         let args = do_args I.parse_convert_input data in
         match do_run convert args with
-          | `ok res -> return_ok (I.gen_convert_output (-1) res)
-          | `error err -> return_error (I.gen_convert_error (-1) err)
+          | `ok res -> return_ok (I.gen_convert_output res)
+          | `error err -> return_error (I.gen_convert_error err)
         )
     | "add-piqi", data -> (
         let args = do_args I.parse_add_piqi_input data in
         match do_run add_piqi args with
           | `ok_empty -> return_ok_empty ()
-          | `error err -> return_error (I.gen_add_piqi_error (-1) err)
+          | `error err -> return_error (I.gen_add_piqi_error err)
         )
     | "ping", None ->
         return_ok_empty ()
@@ -321,13 +324,14 @@ let main_loop () =
     (* reset location db to allow GC to collect previously read objects *)
     Piqloc.reset ();
     (* XXX: run garbage collection on the minor heap to free all memory used for
-     * the request *)
+     * the request -- testing has not reveal any performance penalty for doing
+     * this *)
     Gc.minor ();
   done
 
 
 let start_server () =
-  Piqi_json.init ();
+  Piqi_convert.init ();
   (* exit on SIGPIPE without printing a message about uncaught exception *)
   Sys.set_signal Sys.sigpipe (Sys.Signal_handle (fun _ ->
     (* have to close all channels explicilty to prevent getting an uncaught
