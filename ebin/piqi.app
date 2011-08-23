@@ -1,6 +1,6 @@
 {application, piqi,
  [{description, "Piqi Library"},
-  {vsn, "0.5.5-dev"},
+  {vsn, "0.5.6"},
   {modules, [
         piqirun, piqirun_ext,
         piqi_tools, piqi_rpc_piqi, piqi_tools_piqi,
